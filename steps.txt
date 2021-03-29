@@ -1,0 +1,32 @@
+- Download project 
+     git clone https://github.com/jklepatch/eattheblocks.git
+
+cp -r eattheblocks/profitable-flashloans/9-setup-project/ eattheblocks-profitable-flashloans
+
+Open eattheblocks-profitable-flashloans folder in VSCode
+
+npm install -g truffle
+npm i dotenv
+npm install web3
+    -> This installs the node_modules filder
+
+create account in https://infura.io/
+    user: saul.maldonado@gmail.com
+    pass: Infur@.123.!
+
+    create Etherium project -> Flashloan
+
+    copy wws endpoint link --> wss://mainnet.infura.io/ws/v3/71241e04d2904598bcd18c505c182280
+
+create .env file in root folder
+
+create run-arbitrage.js in root folder of this project    
+    - Open a websocket connection and subscribe to ETH header channel
+
+    - Connect to Poll Kyber to get market data for Dai and Eth
+
+        - In the same transaction we'll query Kyber for ETH-DAI and DAI-ETH
+
+        - Normalize prices from Kyber
+
+
