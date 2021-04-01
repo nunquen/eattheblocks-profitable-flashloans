@@ -1,3 +1,10 @@
 npm install -g truffle
 npm install web3
 npm i dotenv
+#npm install  @ethersproject
+#npm install -g solc
+npm i @ethersproject/solidity
+npm i @ethersproject/contracts
+npm i @ethersproject/networks
+npm i @ethersproject/providers
+npm i @uniswap/sdk
