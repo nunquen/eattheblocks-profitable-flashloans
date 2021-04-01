@@ -49,3 +49,21 @@ WARNING -- WARNING -- WARNING -- WARNING -- WARNING -- WARNING -- WARNING
     For more details: https://docs.ethers.io/api-keys/
     ==========================
 WARNING -- WARNING -- WARNING -- WARNING -- WARNING -- WARNING -- WARNING
+
+npm install -g truffle
+
+execute in your project's main folder
+
+    truffel init .
+    -> this will create the contract, migration and test folders and truffel-config.js
+
+Getting ETH private key and address for testing
+    - Go to https://vanity-eth.tk/ scroll bottom and get ETH address and private key
+    - address and private key are saved in .env file 
+    - in run-arbitrage.js 
+        if (process.env.NODE_ENV.trim() == 'development'){
+            PRIVATE_KEY = process.env.ETH_PRIVATE_KEY_FOR_TESTING;
+        }
+        // Setting private key in order to sign transactions in web3
+        web3.eth.accounts.wallet.add(PRIVATE_KEY);
+
