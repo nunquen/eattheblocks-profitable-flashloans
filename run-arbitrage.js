@@ -26,7 +26,7 @@ const AMOUNT_ETH = 100;
 
 // **********************************************************************************
 // TODO: This static variable should be updated on each run
-const RECENT_ETH_PRICE = 1707;
+const RECENT_ETH_PRICE = 1943.096;
 // **********************************************************************************
 
 // The minimum unit of Ether is called “wei” where 1 ether = 1000000000000000000 wei
@@ -107,12 +107,19 @@ const init = async () => {
             console.log('kyber ETH/DAI');
             console.log(kyberRates);
 
-            const uniswapResult = await Promise.all([
+            const uniswapResults = await Promise.all([
                 daiWeth.getOutputAmount(new TokenAmount(dai, AMOUNT_DAI_WEI)),
                 daiWeth.getOutputAmount(new TokenAmount(weth, AMOUNT_ETH_WEI))
             ]);
 
-            console.log(uniswapResult);
+            // Normilizing the prices from uniswap
+            const uniswapRates = {
+                buy: parseFloat(AMOUNT_DAI_WEI / (uniswapResults[0][0].toExact() * 10 ** 18)),
+                sell: parseFloat((uniswapResults[1][0].toExact() * 10 ** 18) / AMOUNT_ETH_WEI)
+            }
+
+            console.log("UNISWAP ETH/DAI");
+            console.log(uniswapRates);
         })
         .on('error', error => {
             console.log(error);
