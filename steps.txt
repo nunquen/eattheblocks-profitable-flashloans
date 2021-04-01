@@ -8,7 +8,8 @@ Open eattheblocks-profitable-flashloans folder in VSCode
 npm install -g truffle
 npm i dotenv
 npm install web3
-    -> This installs the node_modules filder
+npm install @uniswap/sdk
+    -> This installs the node_modules folder
 
 create account in https://infura.io/
     user: saul.maldonado@gmail.com
@@ -29,4 +30,22 @@ create run-arbitrage.js in root folder of this project
 
         - Normalize prices from Kyber
 
+Fixes on @uniswap/sdk
+    - Token.fetchData -> replece by Fetcher.fetchTokenData
+    - Pair.fetchData -> replaced by Fetcher.fetchPairData
 
+
+WARNING -- WARNING -- WARNING -- WARNING -- WARNING -- WARNING -- WARNING
+    ========= NOTICE =========
+    Request-Rate Exceeded  (this message will not be repeated)
+
+    The default API keys for each service are provided as a highly-throttled,
+    community resource for low-traffic projects and early prototyping.
+
+    While your application will continue to function, we highly recommended
+    signing up for your own API keys to improve performance, increase your
+    request rate/limit and enable other perks, such as metrics and advanced APIs.
+
+    For more details: https://docs.ethers.io/api-keys/
+    ==========================
+WARNING -- WARNING -- WARNING -- WARNING -- WARNING -- WARNING -- WARNING
