@@ -34,6 +34,8 @@ const RECENT_ETH_PRICE = 1943.096;
 const AMOUNT_ETH_WEI = web3.utils.toWei(AMOUNT_ETH.toString());
 const AMOUNT_DAI_WEI = web3.utils.toWei((AMOUNT_ETH * RECENT_ETH_PRICE).toString());
 
+const WEI_VALUE = 10 ** 18;
+
 // Must use an async function in order to deal with @uniswap/sdk framework
 const init = async () => {
 
@@ -100,8 +102,8 @@ const init = async () => {
             // SELL DAI/ETH
             //  - Get real value dividing bye WEI const which is 10 ^ 18
             const kyberRates = {
-                buy: parseFloat(1 / (kyberResults[0].expectedRate / (10 ** 18))),
-                sell: parseFloat( (kyberResults[1].expectedRate / (10 ** 18)) )
+                buy: parseFloat(1 / (kyberResults[0].expectedRate / (WEI_VALUE))),
+                sell: parseFloat( (kyberResults[1].expectedRate / (WEI_VALUE)) )
             };
 
             console.log('kyber ETH/DAI');
@@ -114,12 +116,42 @@ const init = async () => {
 
             // Normilizing the prices from uniswap
             const uniswapRates = {
-                buy: parseFloat(AMOUNT_DAI_WEI / (uniswapResults[0][0].toExact() * 10 ** 18)),
-                sell: parseFloat((uniswapResults[1][0].toExact() * 10 ** 18) / AMOUNT_ETH_WEI)
+                buy: parseFloat(AMOUNT_DAI_WEI / (uniswapResults[0][0].toExact() * WEI_VALUE)),
+                sell: parseFloat((uniswapResults[1][0].toExact() * WEI_VALUE) / AMOUNT_ETH_WEI)
             }
 
             console.log("UNISWAP ETH/DAI");
             console.log(uniswapRates);
+
+            // Calculating the Gas Price (transaction cost)
+            // Getting the Gas Price market value
+            const gasPrice = await web3.eth.getGasPrice();
+            const gasCost = 200000 // Temp value to be replaced by real gasCost
+            const transactionCost = gasCost * parseInt(gasPrice);
+            const currentEthPrice = (uniswapRates.buy + uniswapRates.sell) / 2;
+
+            // *** Calculating the profit in DAI ***
+            const profit1 = ( parseInt(AMOUNT_ETH_WEI) / WEI_VALUE ) * ( uniswapRates.sell - kyberRates.buy ) - 
+                            ( transactionCost / WEI_VALUE ) * currentEthPrice;
+
+            const profit2 = ( parseInt(AMOUNT_ETH_WEI) / WEI_VALUE ) * ( kyberRates.sell - uniswapRates.buy ) - 
+                            ( transactionCost / WEI_VALUE ) * currentEthPrice;
+            
+            if ( profit1 > 0 ) {
+                console.log('Arb opportunity found');
+                console.log(`Buy ETH on Kyber at ${kyberRates.buy} dai`);
+                console.log(`Sell ETH on Uniswap at ${uniswapRates.sell} dai`);
+                console.log(`Expected profit: ${profit1} dai`);
+            }
+            
+            if ( profit2 > 0 ) {
+                console.log('Arb opportunity found');
+                console.log(`Buy ETH on Uniswap at ${uniswapRates.buy} dai`);
+                console.log(`Sell ETH on Kyber at ${kyberRates.sell} dai`);
+                console.log(`Expected profit: ${profit2} dai`);
+            }
+            
+
         })
         .on('error', error => {
             console.log(error);
