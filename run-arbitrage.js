@@ -1,5 +1,13 @@
 require('dotenv').config();
 
+// Defining ETH address and Private Key
+ETH_ADDRESS = process.env.ETH_ADDRESS_FOR_REAL;
+PRIVATE_KEY = process.env.ETH_PRIVATE_KEY_FOR_REAL;
+if (process.env.NODE_ENV.trim() == 'development'){
+    ETH_ADDRESS = process.env.ETH_ADDRESS_FOR_TESTING;
+    PRIVATE_KEY = process.env.ETH_PRIVATE_KEY_FOR_TESTING;
+}
+
 const Web3 = require('web3');
 
 const { ChainId, Token, TokenAmount, Pair, Fetcher } = require('@uniswap/sdk');
@@ -13,6 +21,9 @@ const { mainnet: addresses } = require('./addresses');
 const web3 = new Web3(
     new Web3.providers.WebsocketProvider(process.env.INFURA_WEBSOCKET_ENDPOINT)
 );
+
+// Setting private key in order to sign transactions in web3
+web3.eth.accounts.wallet.add(PRIVATE_KEY);
 
 // Connection to Kyber to connect with the smart contract
 const kyber = new web3.eth.Contract(
@@ -126,9 +137,11 @@ const init = async () => {
             // Calculating the Gas Price (transaction cost)
             // Getting the Gas Price market value
             const gasPrice = await web3.eth.getGasPrice();
-            const gasCost = 200000 // Temp value to be replaced by real gasCost
+            const gasCost = 200000 // TODO: Temp value to be replaced by real gasCost
             const transactionCost = gasCost * parseInt(gasPrice);
             const currentEthPrice = (uniswapRates.buy + uniswapRates.sell) / 2;
+
+            console.log(`##### currentEthPrice is ${currentEthPrice}`);
 
             // *** Calculating the profit in DAI ***
             const profit1 = ( parseInt(AMOUNT_ETH_WEI) / WEI_VALUE ) * ( uniswapRates.sell - kyberRates.buy ) - 
