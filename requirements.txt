@@ -8,3 +8,4 @@ npm i @ethersproject/contracts
 npm i @ethersproject/networks
 npm i @ethersproject/providers
 npm i @uniswap/sdk
+npm install @studydefi/money-legos
