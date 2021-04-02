@@ -67,3 +67,17 @@ Getting ETH private key and address for testing
         // Setting private key in order to sign transactions in web3
         web3.eth.accounts.wallet.add(PRIVATE_KEY);
 
+npm install @studydefi/money-legos
+
+Create mmanually contracts/Flashloan.sol
+    Go to https://money-legos.studydefi.com/#/dydx, copy the js and paste it into the new Flashloan.sol file
+    Call inner class Flashloan
+    Coding
+        enum Direction { KyberToUniswap, UniswapToKyber }
+        struct ArbInfo {
+            Direction direction;
+            uint256 repayAmount;
+        }
+        function initiateFlashLoan -> add 'Direction _direction' as input parameter
+        -> Fit code as required for this changes
+        
