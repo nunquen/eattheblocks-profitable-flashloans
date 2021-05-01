@@ -137,7 +137,7 @@ const init = async () => {
             // Calculating the Gas Price (transaction cost)
             // Getting the Gas Price market value
             const gasPrice = await web3.eth.getGasPrice();
-            const gasCost = 200000 // TODO: Temp value to be replaced by real gasCost
+            const gasCost = 200000 // TODO: Temp value to be replaced with real gasCost
             const transactionCost = gasCost * parseInt(gasPrice);
             const currentEthPrice = (uniswapRates.buy + uniswapRates.sell) / 2;
 
