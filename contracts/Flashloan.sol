@@ -71,7 +71,8 @@ contract Flashloan is ICallee, DydxFlashloanBase {
             // Trading on kyber
             kyber.swapTokenToEther(dai, balanceDai, expectedRate);
 
-            // Sell it on Uniswap: we must define the path for trading.
+            // Sell ETH on Uniswap: 
+            //    We must define the path for trading.
             //    In Unisawp we can trade from asset A, to B and then finally to C
             //    Aldough we'll be only trading with "A" we still must define a path 
             // Declaring an array of 2 in Solidity
@@ -84,13 +85,52 @@ contract Flashloan is ICallee, DydxFlashloanBase {
 
             // Trading on Uniswap
             uniswap.swapETHForExactTokens.value(address(this).balance)(
-                minOuts[2],
+                minOuts[1],
                 path,
                 address(this),
                 // Deadline 
                 now );
         }
         
+        if (arbInfo.direction == Direction.UniswapToKyber) {
+            // Buy ETH on Uniswap
+            dai.approve(address(uniswap), balanceDai);
+
+            address memory path = new address[](2);
+            // Remember: in Uniswap we don't work with Ether bu with weth
+            path[0] = address(dai);
+            path[1] = address(weth);
+
+            uint[] memory minOuts = uniswap.getAmountsOut(balanceDai, path);
+
+            // Trading on Uniswap
+            uniswap.swapExactTokensForETH(
+                balancedai, 
+                minOuts[1],
+                path,
+                address(this),
+                // Deadline 
+                now );
+
+            // Sell ETH on Kyber
+            (uint expectedRate, ) = uniswap.getExpectedRate(
+                //Pointer to the output token
+                IERC20(KYBER_ETH_ADDRESS),
+                //Pointer to the token
+                dai,
+                //Amount of Ether we want to trade
+                address(this).balance
+            );
+            // Trading on kyber
+            kyber.swapEtherToToken.value(address(this).balance)(
+                dai, 
+                expectedRate
+                );
+
+            
+        }
+        
+
         // IMPORTANT: this required section is where the contract is valid.
         //            if something fails then the contract will fial.
         require(
