@@ -17,13 +17,15 @@ const abis = require('./abis');
 // Kyber addresses: importing mainnet object and renaming as "addresses"
 const { mainnet: addresses } = require('./addresses');
 
+const Flashloan = require('./build/contracts/Flashloan.json');
+
 // Creating an isntance of web3 that represents a connection to the block chain
 const web3 = new Web3(
     new Web3.providers.WebsocketProvider(process.env.INFURA_WEBSOCKET_ENDPOINT)
 );
 
 // Setting private key in order to sign transactions in web3
-web3.eth.accounts.wallet.add(PRIVATE_KEY);
+const { address: admin } = web3.eth.accounts.wallet.add(PRIVATE_KEY);
 
 // Connection to Kyber to connect with the smart contract
 const kyber = new web3.eth.Contract(
@@ -47,8 +49,19 @@ const AMOUNT_DAI_WEI = web3.utils.toWei((AMOUNT_ETH * RECENT_ETH_PRICE).toString
 
 const WEI_VALUE = 10 ** 18;
 
+const direction = {
+    KYBER_TO_UNISWAP: 0,
+    UNISWAP_TO_KYBER: 1
+};
+
 // Must use an async function in order to deal with @uniswap/sdk framework
 const init = async () => {
+
+    const nerworkId = await web3.eth.net.getId();
+    const flashloan = new web3.eth.Contract(
+        Flashloan.abi,
+        Flashloan.networks[networkId].address
+    );
 
     // Let's instantiate the 2 tokens
     // Note: We use 'weth' or Wrapped Etherium as a ERC20 valid token for ETH
@@ -134,27 +147,60 @@ const init = async () => {
             console.log("UNISWAP ETH/DAI");
             console.log(uniswapRates);
 
+            // Defining the gast cost for both directions
+            const [tx1, tx2] = Obecjt.keys(DIRECTION).map(direction => flashloan.methods.initiateFlashloan(
+                address.dydx.solo,
+                address.tokens.dai,
+                AMOUNT_DAI_WEI,
+                DIRECTION[direction]
+            ));
+
+            // Note: this calculation might cause problems and might cause the transaction to fail
+            //       Use the conlose log gasCost and apply +20% and have it as a fix value
+            const [gasPrice, gasCost1, gasCost2] = await Promise.all([
+                web3.eth.getGasPrice(),
+                tx1.estimateGas({from: admin}),
+                tx2.estimateGas({from: admin}),
+            ]);
+            if (gasCost1 > 0){
+                console.log(`## gasCost1 is ${gasCost1}`);
+            }
+            if (gasCost2 > 0){
+                console.log(`## gasCost2 is ${gasCost2}`);
+            }
+            
             // Calculating the Gas Price (transaction cost)
             // Getting the Gas Price market value
-            const gasPrice = await web3.eth.getGasPrice();
-            const gasCost = 200000 // TODO: Temp value to be replaced with real gasCost
-            const transactionCost = gasCost * parseInt(gasPrice);
+            const transactionCost1 = parseInt(gasCost1) * parseInt(gasPrice);
+            const transactionCost2 = parseInt(gasCost2) * parseInt(gasPrice);
             const currentEthPrice = (uniswapRates.buy + uniswapRates.sell) / 2;
 
             console.log(`##### currentEthPrice is ${currentEthPrice}`);
 
             // *** Calculating the profit in DAI ***
             const profit1 = ( parseInt(AMOUNT_ETH_WEI) / WEI_VALUE ) * ( uniswapRates.sell - kyberRates.buy ) - 
-                            ( transactionCost / WEI_VALUE ) * currentEthPrice;
+                            ( transactionCost1 / WEI_VALUE ) * currentEthPrice;
 
             const profit2 = ( parseInt(AMOUNT_ETH_WEI) / WEI_VALUE ) * ( kyberRates.sell - uniswapRates.buy ) - 
-                            ( transactionCost / WEI_VALUE ) * currentEthPrice;
+                            ( transactionCost2 / WEI_VALUE ) * currentEthPrice;
             
             if ( profit1 > 0 ) {
                 console.log('Arb opportunity found');
                 console.log(`Buy ETH on Kyber at ${kyberRates.buy} dai`);
                 console.log(`Sell ETH on Uniswap at ${uniswapRates.sell} dai`);
                 console.log(`Expected profit: ${profit1} dai`);
+                
+                // Initiating the flashloan contract
+                const data = tx1.encondeABI();
+                const txData = {
+                    from: admin,
+                    to: flashloan.address,
+                    data,
+                    gas: gasCost1,
+                    gasPrice
+                };
+                const receipt = await web3.eth.sendTransaction(txData);
+                console.log(`Transaction hash: ${receipt.transactionHash}`);
             }
             
             if ( profit2 > 0 ) {
@@ -162,6 +208,18 @@ const init = async () => {
                 console.log(`Buy ETH on Uniswap at ${uniswapRates.buy} dai`);
                 console.log(`Sell ETH on Kyber at ${kyberRates.sell} dai`);
                 console.log(`Expected profit: ${profit2} dai`);
+
+                // Initiating the flashloan contract
+                const data = tx2.encondeABI();
+                const txData = {
+                    from: admin,
+                    to: flashloan.address,
+                    data,
+                    gas: gasCost2,
+                    gasPrice
+                };
+                const receipt = await web3.eth.sendTransaction(txData);
+                console.log(`Transaction hash: ${receipt.transactionHash}`);
             }
             
 
