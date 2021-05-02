@@ -118,7 +118,7 @@ Include required interfaces: KyberNetworkProxy, IUniswapV2Router02, IWeth and IE
         }
 
     - In the body of this function we'll include the direction of our trades.
-      The first direction is 
+      The first direction is "Buy in Kyber and sell in Uniswap"
         if (arbInfo.direction == Direction.KyberToUniswap) {
             // Buy ETH on Kyber
             dai.approve(address(kyber), balanceDai);
@@ -157,3 +157,67 @@ Include required interfaces: KyberNetworkProxy, IUniswapV2Router02, IWeth and IE
     - Important: at the end of this script we must define a fullback function 
         // Fullback function (mandatory)
         function() external payable{}
+
+    - The second direction is "Buy in Uniswap and sell in Kyber"
+    if (arbInfo.direction == Direction.UniswapToKyber) {
+            // Buy ETH on Uniswap
+            dai.approve(address(uniswap), balanceDai);
+
+            address memory path = new address[](2);
+            // Remember: in Uniswap we don't work with Ether bu with weth
+            path[0] = address(dai);
+            path[1] = address(weth);
+
+            uint[] memory minOuts = uniswap.getAmountsOut(balanceDai, path);
+
+            // Trading on Uniswap
+            uniswap.swapExactTokensForETH(
+                balancedai, 
+                minOuts[1],
+                path,
+                address(this),
+                // Deadline 
+                now );
+
+            // Sell ETH on Kyber
+            (uint expectedRate, ) = uniswap.getExpectedRate(
+                //Pointer to the output token
+                IERC20(KYBER_ETH_ADDRESS),
+                //Pointer to the token
+                dai,
+                //Amount of Ether we want to trade
+                address(this).balance
+            );
+            // Trading on kyber
+            kyber.swapEtherToToken.value(address(this).balance)(
+                dai, 
+                expectedRate
+                );
+        }
+
+    - Important: must check if the contract is valid
+
+        // IMPORTANT: this required section is where the contract is valid.
+        //            if something fails then the contract will fial.
+        require(
+            dai.balanceOf(address(this)) >= arbInfo.repayAmount,
+            "Not enough funds to repay DyDx loan!"
+        );
+
+    - Calculating profit and withdraw 
+        // Withdraw profit
+        // 1.- Calculating profit
+        uint profit = dai.balanceOf(address(this)) - arbInfo.repayAmount;
+        // 2.- Send profit to the beficiary address
+        dai.transfer(beneficiary, profit);
+        // 3.- Emit an event to describe the arbitrage that already happend
+        emit NewArbitrage(arbInfo.direction, profit, now);
+
+    - Definde in the top section of this Flashloan contract
+         event NewArbitrage( 
+            Direction direction,
+            uint profit,
+            uint date
+        );
+
+        

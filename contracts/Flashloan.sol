@@ -23,11 +23,18 @@ contract Flashloan is ICallee, DydxFlashloanBase {
         uint256 repayAmount;
     }
 
+    event NewArbitrage( 
+        Direction direction,
+        uint profit,
+        uint date
+    );
+
     // Defining exchanges and addresses pointers for smart contracts
     IKyberNetworkProxy kyber;
     IUniswapV2Router02 uniswap;
     IWeth weth;
     IERC20 dai;
+    address beneficiary;
     // This is constant value to deal with ETH in Kyber
     address constant KYBER_ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -36,13 +43,15 @@ contract Flashloan is ICallee, DydxFlashloanBase {
         address kyberAddress,
         address uniswapAddress,
         address weithAddress,
-        address daiAddress
+        address daiAddress,
+        address beneficiaryAddress
     ) public {
         // Instantiating all pointers   
         kyber = IKyberNetworkProxy(kyberAddress);
         uniswap = IUniswapV2Router02(uniswapAddress);
         weth = IWeth(weithAddress);
         dai = IERC20(daiAddress);
+        beneficiary = beneficiaryAddress;
     }
 
     // This is the function that will be called postLoan
@@ -130,13 +139,20 @@ contract Flashloan is ICallee, DydxFlashloanBase {
             
         }
         
-
         // IMPORTANT: this required section is where the contract is valid.
         //            if something fails then the contract will fial.
         require(
-            balanceDai >= arbInfo.repayAmount,
+            dai.balanceOf(address(this)) >= arbInfo.repayAmount,
             "Not enough funds to repay DyDx loan!"
         );
+
+        // Withdraw profit
+        // 1.- Calculating profit
+        uint profit = dai.balanceOf(address(this)) - arbInfo.repayAmount;
+        // 2.- Send profit to the beficiary address
+        dai.transfer(beneficiary, profit);
+        // 3.- Emit an event to describe the arbitrage that already happend
+        emit NewArbitrage(arbInfo.direction, profit, now);
 
     }
 
